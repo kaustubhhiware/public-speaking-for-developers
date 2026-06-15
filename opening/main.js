@@ -31,7 +31,7 @@
     Keyboard · touch/swipe · mouse wheel
     ================================================ */
 class SlidePresentation {
-    constructor() {
+    constructor(startIdx = 0) {
         this.slides = Array.from(document.querySelectorAll('.slide'));
         this.total  = this.slides.length;
         this.current = 0;
@@ -42,7 +42,7 @@ class SlidePresentation {
         this.setupKeyboard();
         this.setupTouch();
         this.setupWheel();
-        this.show(0);
+        this.show(startIdx, false);
     }
 
     /* Scale the fixed 1920×1080 stage to fit the viewport */
@@ -96,7 +96,7 @@ class SlidePresentation {
     next() { this.show(this.current + 1); }
     prev() { this.show(this.current - 1); }
 
-    show(idx) {
+    show(idx, push = true) {
         this.current = Math.max(0, Math.min(idx, this.total - 1));
         this.slides.forEach((s, i) => {
             const on = i === this.current;
@@ -104,7 +104,16 @@ class SlidePresentation {
             s.classList.toggle('visible', on);
         });
         this.bar.style.width = ((this.current + 1) / this.total * 100) + '%';
+        const url = '#' + (this.current + 1);
+        if (push) history.pushState({slide: this.current + 1}, '', url);
+        else      history.replaceState({slide: this.current + 1}, '', url);
     }
 }
 
-const deck = new SlidePresentation();
+const initialHash = parseInt(location.hash.slice(1));
+const deck = new SlidePresentation(initialHash >= 1 ? initialHash - 1 : 0);
+
+window.addEventListener('popstate', e => {
+    const slide = e.state?.slide ?? parseInt(location.hash.slice(1));
+    if (slide >= 1) deck.show(slide - 1, false);
+});

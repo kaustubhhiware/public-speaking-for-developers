@@ -11,7 +11,7 @@
     --green-dim:    rgba(74, 222, 128, 0.22);
     --green-faint:  rgba(74, 222, 128, 0.07);
     --chalk:        #f0ece4;
-    --chalk-dim:    rgba(240, 236, 228, 0.52);
+    --chalk-dim:    #f0ece4;
     --chalk-faint:  rgba(240, 236, 228, 0.11);
 
     --font-serif: 'Bitter', Georgia, serif;
@@ -595,6 +595,29 @@ img, video, canvas, svg { max-width: 100%; max-height: 100%; }
     background: var(--green);
     color: var(--bg);
     animation: none;
+}
+
+.all-slides-btn {
+    position: absolute;
+    bottom: 120px;
+    right: 76px;
+    z-index: 10;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1.5px solid rgba(74,222,128,0.4);
+    padding: 14px 40px;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.all-slides-btn:hover {
+    background: var(--green);
+    color: var(--bg);
+    border-color: var(--green);
 }
 
 /* ================================================

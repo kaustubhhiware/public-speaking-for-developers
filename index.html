@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-PBVB5QC3KN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-PBVB5QC3KN');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Public Speaking for Developers</title>
@@ -99,6 +106,7 @@ body::before {
     transition: background 0.4s ease;
 }
 
+.panel:first-child,
 .panel:nth-child(2) {
     border-right: 1px solid var(--green-faint);
 }
@@ -257,47 +265,6 @@ body::before {
 }
 
 /* ——————————————————————————————
-   SECTION DIVIDER (between panel 1 & 2)
-—————————————————————————————— */
-.section-divider {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 22px;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-}
-
-.section-divider::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: linear-gradient(to bottom, transparent 0%, var(--green) 20%, var(--green) 80%, transparent 100%);
-}
-
-.section-divider-text {
-    position: relative;
-    z-index: 1;
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-size: 11px;
-    letter-spacing: 0.28em;
-    text-transform: uppercase;
-    color: var(--green);
-    writing-mode: vertical-lr;
-    transform: rotate(180deg);
-    background: var(--bg);
-    padding: 10px 0;
-    opacity: 0.7;
-    white-space: nowrap;
-}
-
-/* ——————————————————————————————
    DIVIDER LINE (center top)
 —————————————————————————————— */
 .divider-label {
@@ -336,7 +303,6 @@ body::before {
     }
     .panel-bg-num { font-size: clamp(120px, 40vw, 200px); }
     .divider-label { display: none; }
-    .section-divider { display: none; }
 }
 
 /* ——————————————————————————————
@@ -394,9 +360,6 @@ body::before {
 
   <!-- PANEL 2: Technical talk -->
   <a class="panel" href="talk/index.html">
-    <div class="section-divider" aria-hidden="true">
-      <span class="section-divider-text">Brought to you by</span>
-    </div>
     <span class="panel-index">02 &mdash; Talk</span>
     <div class="panel-bg-num" aria-hidden="true">02</div>
     <div class="panel-content">
