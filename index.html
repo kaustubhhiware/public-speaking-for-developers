@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Public Speaking for Developers</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,600;0,700;0,900;1,400;1,600&family=Nunito:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg:           #060d06;
+    --bg-elevated:  #0c1a0c;
+    --green:        #4ade80;
+    --green-dim:    rgba(74, 222, 128, 0.22);
+    --green-faint:  rgba(74, 222, 128, 0.07);
+    --chalk:        #f0ece4;
+    --chalk-dim:    rgba(240, 236, 228, 0.52);
+    --chalk-faint:  rgba(240, 236, 228, 0.11);
+    --font-serif:   'Bitter', Georgia, serif;
+    --font-sans:    'Nunito', sans-serif;
+    --ease-expo:    cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--chalk);
+    font-family: var(--font-sans);
+    overflow: hidden;
+}
+
+/* ——————————————————————————————
+   MATRIX CANVAS
+—————————————————————————————— */
+#matrixCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.07;
+}
+
+/* ——————————————————————————————
+   GRID TEXTURE
+—————————————————————————————— */
+body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+        linear-gradient(rgba(74,222,128,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(74,222,128,0.03) 1px, transparent 1px);
+    background-size: 80px 80px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ——————————————————————————————
+   SPLIT LAYOUT
+—————————————————————————————— */
+.split {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 32fr 36fr 32fr;
+    width: 100vw;
+    min-height: 100dvh;
+    transition: grid-template-columns 0.55s var(--ease-expo);
+}
+
+.split:has(.panel:nth-child(1):hover) {
+    grid-template-columns: 50fr 28fr 22fr;
+}
+
+.split:has(.panel:nth-child(2):hover) {
+    grid-template-columns: 22fr 56fr 22fr;
+}
+
+.split:has(.panel:nth-child(3):hover) {
+    grid-template-columns: 22fr 28fr 50fr;
+}
+
+/* ——————————————————————————————
+   PANELS
+—————————————————————————————— */
+.panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: clamp(32px, 5vw, 72px) clamp(28px, 4.5vw, 64px);
+    min-height: 100dvh;
+    text-decoration: none;
+    color: inherit;
+    overflow: hidden;
+    cursor: pointer;
+    transition: background 0.4s ease;
+}
+
+.panel:nth-child(2) {
+    border-right: 1px solid var(--green-faint);
+}
+
+.panel:first-child::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 5px;
+    background: linear-gradient(to bottom, var(--green), rgba(74,222,128,0.06));
+}
+
+.panel:last-child::before {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 5px;
+    background: linear-gradient(to bottom, var(--green), rgba(74,222,128,0.06));
+}
+
+.panel:hover {
+    background: rgba(74, 222, 128, 0.025);
+}
+
+/* radial glow on hover */
+.panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 80%, rgba(74,222,128,0.08) 0%, transparent 65%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+.panel:hover::after { opacity: 1; }
+
+/* ——————————————————————————————
+   INDEX TAG  (top-left of each panel)
+—————————————————————————————— */
+.panel-index {
+    position: absolute;
+    top: clamp(28px, 4vw, 56px);
+    left: clamp(28px, 4.5vw, 64px);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: clamp(13px, 1.1vw, 16px);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--green);
+}
+.panel-index::before {
+    content: '';
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+}
+
+/* ——————————————————————————————
+   BIG NUMBER (background)
+—————————————————————————————— */
+.panel-bg-num {
+    position: absolute;
+    right: -0.04em;
+    bottom: -0.18em;
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: clamp(220px, 28vw, 420px);
+    line-height: 1;
+    color: rgba(74,222,128,0.04);
+    pointer-events: none;
+    user-select: none;
+    transition: color 0.4s ease;
+}
+.panel:hover .panel-bg-num {
+    color: rgba(74,222,128,0.07);
+}
+
+/* ——————————————————————————————
+   CONTENT BLOCK
+—————————————————————————————— */
+.panel-content {
+    position: relative;
+    z-index: 1;
+}
+
+.panel-label {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: clamp(14px, 1.2vw, 18px);
+    letter-spacing: 0.14em;
+    color: var(--chalk-dim);
+    text-transform: uppercase;
+    margin-bottom: clamp(14px, 1.8vw, 24px);
+}
+
+.panel-title {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: clamp(42px, 5.5vw, 86px);
+    line-height: 1.04;
+    color: var(--chalk);
+    margin-bottom: clamp(16px, 2vw, 28px);
+}
+
+.panel-title .accent {
+    color: var(--green);
+    font-style: italic;
+}
+
+.panel-sub {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: clamp(14px, 1.3vw, 19px);
+    line-height: 1.65;
+    color: var(--chalk-dim);
+    max-width: 42ch;
+    margin-bottom: clamp(28px, 3.5vw, 48px);
+}
+
+/* ——————————————————————————————
+   CTA ARROW
+—————————————————————————————— */
+.panel-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: clamp(13px, 1.1vw, 16px);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1.5px solid var(--green-dim);
+    padding: clamp(12px, 1.4vw, 18px) clamp(20px, 2.4vw, 32px);
+    border-radius: 999px;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.panel:hover .panel-cta {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--bg);
+    transform: translateY(-2px);
+}
+
+.panel-cta-arrow {
+    display: inline-block;
+    transition: transform 0.3s var(--ease-expo);
+}
+.panel:hover .panel-cta-arrow {
+    transform: translateX(5px);
+}
+
+/* ——————————————————————————————
+   SECTION DIVIDER (between panel 1 & 2)
+—————————————————————————————— */
+.section-divider {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 22px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.section-divider::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, transparent 0%, var(--green) 20%, var(--green) 80%, transparent 100%);
+}
+
+.section-divider-text {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--green);
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    background: var(--bg);
+    padding: 10px 0;
+    opacity: 0.7;
+    white-space: nowrap;
+}
+
+/* ——————————————————————————————
+   DIVIDER LINE (center top)
+—————————————————————————————— */
+.divider-label {
+    position: fixed;
+    top: clamp(28px, 4vw, 56px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: clamp(11px, 0.9vw, 13px);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--chalk-faint);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* ——————————————————————————————
+   MOBILE FALLBACK
+—————————————————————————————— */
+@media (max-width: 768px) {
+    html, body { overflow: auto; }
+    .split {
+        grid-template-columns: 1fr !important;
+        grid-template-rows: repeat(3, auto);
+        min-height: 100dvh;
+    }
+    .panel {
+        min-height: 34dvh;
+    }
+    .panel:first-child,
+    .panel:nth-child(2) {
+        border-right: none;
+        border-bottom: 1px solid var(--green-faint);
+    }
+    .panel-bg-num { font-size: clamp(120px, 40vw, 200px); }
+    .divider-label { display: none; }
+    .section-divider { display: none; }
+}
+
+/* ——————————————————————————————
+   LOAD-IN ANIMATION
+—————————————————————————————— */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.panel-index    { animation: fadeUp 0.65s var(--ease-expo) 0.1s both; }
+.panel-label    { animation: fadeUp 0.65s var(--ease-expo) 0.2s both; }
+.panel-title    { animation: fadeUp 0.65s var(--ease-expo) 0.3s both; }
+.panel-sub      { animation: fadeUp 0.65s var(--ease-expo) 0.4s both; }
+.panel-cta      { animation: fadeUp 0.65s var(--ease-expo) 0.52s both; }
+
+.panel:nth-child(2) .panel-index { animation-delay: 0.18s; }
+.panel:nth-child(2) .panel-label { animation-delay: 0.28s; }
+.panel:nth-child(2) .panel-title { animation-delay: 0.38s; }
+.panel:nth-child(2) .panel-sub   { animation-delay: 0.48s; }
+.panel:nth-child(2) .panel-cta   { animation-delay: 0.60s; }
+
+.panel:last-child .panel-index { animation-delay: 0.26s; }
+.panel:last-child .panel-label { animation-delay: 0.36s; }
+.panel:last-child .panel-title { animation-delay: 0.46s; }
+.panel:last-child .panel-sub   { animation-delay: 0.56s; }
+.panel:last-child .panel-cta   { animation-delay: 0.68s; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.1s !important;
+    }
+}
+</style>
+</head>
+<body>
+
+<canvas id="matrixCanvas" aria-hidden="true"></canvas>
+
+<span class="divider-label">Public Speaking for Developers &nbsp;·&nbsp; 2026.06.15</span>
+
+<div class="split">
+
+  <!-- PANEL 1: Opening slides -->
+  <a class="panel" href="opening/index.html">
+    <span class="panel-index">01 &mdash; Slides</span>
+    <div class="panel-bg-num" aria-hidden="true">01</div>
+    <div class="panel-content">
+      <p class="panel-label">Opening Remarks</p>
+      <h2 class="panel-title">Why Public<br>Speaking Matters<br>for <span class="accent">Developers</span></h2>
+      <span class="panel-cta">View slides <span class="panel-cta-arrow">&rarr;</span></span>
+    </div>
+  </a>
+
+  <!-- PANEL 2: Technical talk -->
+  <a class="panel" href="talk/index.html">
+    <div class="section-divider" aria-hidden="true">
+      <span class="section-divider-text">Brought to you by</span>
+    </div>
+    <span class="panel-index">02 &mdash; Talk</span>
+    <div class="panel-bg-num" aria-hidden="true">02</div>
+    <div class="panel-content">
+      <p class="panel-label">Technical talk</p>
+      <h2 class="panel-title">Giving a<br><span class="accent">Technical</span><br>Presentation</h2>
+      <span class="panel-cta">View slides <span class="panel-cta-arrow">&rarr;</span></span>
+    </div>
+  </a>
+
+  <!-- PANEL 3: Interactive workshop -->
+  <a class="panel" href="interactive/index.html">
+    <span class="panel-index">03 &mdash; Workshop</span>
+    <div class="panel-bg-num" aria-hidden="true">03</div>
+    <div class="panel-content">
+      <p class="panel-label">Interactive session</p>
+      <h2 class="panel-title">Let's Try<br><span class="accent">Public Speaking</span></h2>
+      <span class="panel-cta">Start session <span class="panel-cta-arrow">&rarr;</span></span>
+    </div>
+  </a>
+
+</div>
+
+<script>
+(function () {
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx    = canvas.getContext('2d');
+    const GREEN  = '#4ade80';
+    const FONT_SIZE = 14;
+    let cols, drops;
+
+    function resize() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+        cols  = Math.floor(canvas.width / FONT_SIZE);
+        drops = Array.from({ length: cols }, () => Math.random() * -50);
+    }
+
+    function draw() {
+        ctx.fillStyle = 'rgba(6,13,6,0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = GREEN;
+        ctx.font      = FONT_SIZE + 'px monospace';
+        for (let i = 0; i < drops.length; i++) {
+            const char = String.fromCharCode(0x30A0 + Math.random() * 96);
+            ctx.fillText(char, i * FONT_SIZE, drops[i] * FONT_SIZE);
+            if (drops[i] * FONT_SIZE > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i] += 0.4;
+        }
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    setInterval(draw, 50);
+})();
+</script>
+
+</body>
+</html>

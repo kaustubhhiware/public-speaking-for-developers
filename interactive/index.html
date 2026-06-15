@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Session · Public Speaking for Developers</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,600;0,700;0,900;1,400;1,600&family=Nunito:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+
+/* === CSS CUSTOM PROPERTIES ===================================
+   Palette: dark green base, bright green accent, chalk text
+   ============================================================ */
+:root {
+    --bg:           #060d06;
+    --bg-elevated:  #0c1a0c;
+    --green:        #4ade80;
+    --green-dim:    rgba(74, 222, 128, 0.22);
+    --green-faint:  rgba(74, 222, 128, 0.07);
+    --chalk:        #f0ece4;
+    --chalk-dim:    rgba(240, 236, 228, 0.52);
+    --chalk-faint:  rgba(240, 236, 228, 0.11);
+
+    --font-serif: 'Bitter', Georgia, serif;
+    --font-sans:  'Nunito', sans-serif;
+
+    --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --stage-bg: #060d06;
+}
+
+/* === RESET ================================================== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* === VIEWPORT BASE — fixed 1920×1080 stage ================= */
+html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--stage-bg);
+}
+
+.deck-viewport {
+    position: fixed; inset: 0;
+    overflow: hidden;
+    background: var(--stage-bg);
+}
+
+.deck-stage {
+    position: absolute;
+    left: 0; top: 0;
+    width: 1920px; height: 1080px;
+    overflow: hidden;
+    transform-origin: 0 0;
+    background: var(--bg);
+}
+
+.slide {
+    position: absolute; inset: 0;
+    width: 1920px; height: 1080px;
+    overflow: hidden;
+    display: block;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    background: transparent;
+}
+
+.slide.active, .slide.visible {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 1;
+}
+
+img, video, canvas, svg { max-width: 100%; max-height: 100%; }
+
+@media print {
+    html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+    .deck-viewport { position: static; overflow: visible; }
+    .deck-stage { position: static; width: auto; height: auto; transform: none !important; }
+    .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; background: var(--bg); }
+    .slide:last-child { break-after: auto; }
+    .matrix-canvas, .deck-controls { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
+}
+
+/* === MATRIX CANVAS ========================================= */
+.matrix-canvas {
+    position: absolute; inset: 0;
+    width: 1920px; height: 1080px;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.09;
+}
+
+/* === SLIDE GRID TEXTURE ==================================== */
+.slide::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(74,222,128,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(74,222,128,0.03) 1px, transparent 1px);
+    background-size: 80px 80px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* === SLIDE INNER =========================================== */
+.slide-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%; height: 100%;
+}
+
+/* === SHARED DECORATIVE PIECES ============================== */
+.left-accent {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: linear-gradient(to bottom, var(--green), rgba(74,222,128,0.08));
+    z-index: 2;
+}
+
+.slide-number {
+    position: absolute;
+    bottom: 52px; right: 76px;
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: 20px;
+    letter-spacing: 0.1em;
+    color: var(--chalk-faint);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.section-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--green);
+}
+.section-tag::before {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+}
+
+/* === REVEAL ANIMATIONS ===================================== */
+.reveal {
+    opacity: 0;
+    transform: translateY(26px);
+    transition: opacity 0.65s var(--ease-expo), transform 0.65s var(--ease-expo);
+}
+
+.reveal-left {
+    opacity: 0;
+    transform: translateX(-28px);
+    transition: opacity 0.65s var(--ease-expo), transform 0.65s var(--ease-expo);
+}
+
+.slide.visible .reveal,
+.slide.visible .reveal-left {
+    opacity: 1;
+    transform: none;
+}
+.delay-1 { transition-delay: 0.06s; }
+.delay-2 { transition-delay: 0.16s; }
+.delay-3 { transition-delay: 0.28s; }
+.delay-4 { transition-delay: 0.40s; }
+.delay-5 { transition-delay: 0.52s; }
+.delay-6 { transition-delay: 0.64s; }
+.delay-7 { transition-delay: 0.76s; }
+.delay-8 { transition-delay: 0.88s; }
+
+/* === LAYOUT: TITLE SLIDE =================================== */
+.layout-title {
+    display: flex;
+    align-items: center;
+    padding: 0 160px;
+    height: 100%;
+    position: relative;
+}
+.layout-title .content { max-width: 1220px; }
+.title-bracket-deco {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 132px;
+    color: var(--green);
+    letter-spacing: 0.08em;
+    line-height: 1;
+    margin-bottom: 32px;
+    opacity: 0.75;
+}
+.slide-hero-title {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: 110px;
+    line-height: 1.05;
+    color: var(--chalk);
+    margin-bottom: 52px;
+}
+.accent { color: var(--green); font-style: italic; }
+.title-meta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-family: var(--font-sans);
+    font-size: 27px;
+    color: var(--chalk-dim);
+}
+.title-meta .sep { color: var(--chalk-faint); }
+.deco-circles {
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 580px;
+    pointer-events: none;
+    overflow: hidden;
+}
+.deco-circle {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid var(--green-faint);
+}
+.c1 { width: 520px; height: 520px; top: 120px; right: -110px; }
+.c2 { width: 340px; height: 340px; top: 210px; right: -10px; border-color: var(--green-dim); border-width: 0.5px; }
+.c3 { width: 110px; height: 110px; top: 510px; right: 200px; background: var(--green-faint); border: none; }
+
+/* === LAYOUT: ARC POINT ===================================== */
+.layout-arc {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 160px;
+    height: 100%;
+    position: relative;
+}
+.arc-bg-number {
+    position: absolute;
+    right: 80px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: 380px;
+    line-height: 1;
+    color: rgba(74,222,128,0.04);
+    pointer-events: none;
+    user-select: none;
+}
+.arc-tag {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 44px;
+}
+.arc-tag-label {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--green);
+}
+.arc-tag-line {
+    width: 50px; height: 1.5px;
+    background: var(--green);
+    opacity: 0.35;
+}
+.arc-title {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 90px;
+    line-height: 1.07;
+    color: var(--chalk);
+    max-width: 1100px;
+    margin-bottom: 36px;
+}
+.arc-body {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: 38px;
+    line-height: 1.65;
+    color: var(--chalk-dim);
+    max-width: 880px;
+}
+.arc-note {
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-weight: 300;
+    font-size: 30px;
+    color: var(--chalk-dim);
+    opacity: 0.65;
+    margin-top: 28px;
+}
+
+/* === LAYOUT: SPLIT ========================================= */
+.layout-split {
+    display: grid;
+    grid-template-columns: 40% 60%;
+    height: 100%;
+}
+.split-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 60px 80px 160px;
+    position: relative;
+    z-index: 1;
+}
+.split-title {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: 80px;
+    line-height: 1.07;
+    color: var(--chalk);
+    margin-bottom: 28px;
+    margin-top: 28px;
+}
+.split-body {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: 30px;
+    color: var(--chalk-dim);
+    line-height: 1.6;
+    max-width: 520px;
+}
+.split-panel {
+    background: var(--bg-elevated);
+    border-left: 1px solid var(--green-faint);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 80px 100px;
+}
+.split-panel::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 30%, rgba(74,222,128,0.07) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* === STEPS LIST ============================================ */
+.steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 28px;
+}
+.step-num {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: 48px;
+    color: var(--green);
+    line-height: 1;
+    min-width: 48px;
+    text-align: right;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+.step-text {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: 32px;
+    color: var(--chalk-dim);
+    line-height: 1.5;
+    padding-top: 4px;
+}
+.step-note {
+    display: block;
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-size: 22px;
+    color: var(--green);
+    opacity: 0.7;
+    margin-top: 2px;
+}
+
+/* === LAYOUT: TOPICS ======================================== */
+.layout-topics {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 160px;
+    height: 100%;
+    position: relative;
+}
+.topics-header { margin-bottom: 52px; }
+.topics-title {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 68px;
+    line-height: 1.07;
+    color: var(--chalk);
+    margin-top: 16px;
+}
+.topics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 80px;
+    row-gap: 28px;
+}
+.topic-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 22px;
+}
+.topic-num {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: 48px;
+    color: var(--green);
+    opacity: 0.6;
+    line-height: 1;
+    min-width: 44px;
+    text-align: right;
+    flex-shrink: 0;
+}
+.topic-text {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: 27px;
+    color: var(--chalk-dim);
+    line-height: 1.55;
+    padding-top: 8px;
+}
+
+/* === LAYOUT: IMPACT ======================================== */
+.layout-impact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 160px;
+    height: 100%;
+}
+.impact-headline {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: 132px;
+    line-height: 1.04;
+    color: var(--chalk);
+    margin-bottom: 36px;
+}
+.impact-sub {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: 44px;
+    color: var(--chalk-dim);
+    line-height: 1.5;
+}
+.impact-sub strong { color: var(--chalk); font-weight: 500; }
+
+/* === LAYOUT: CLOSING ======================================= */
+.layout-closing {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0 160px;
+    height: 100%;
+    position: relative;
+}
+.closing-title {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    font-size: 100px;
+    line-height: 1.07;
+    color: var(--chalk);
+    max-width: 1200px;
+    margin-bottom: 40px;
+}
+.closing-sub {
+    font-family: var(--font-sans);
+    font-weight: 300;
+    font-size: 36px;
+    color: var(--chalk-dim);
+    max-width: 960px;
+    line-height: 1.65;
+}
+
+/* === RESTART BUTTON ======================================== */
+@keyframes restart-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(74,222,128,0.55); }
+    70%  { box-shadow: 0 0 0 28px rgba(74,222,128,0); }
+    100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+}
+.restart-btn {
+    position: absolute;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: transparent;
+    border: 2px solid var(--green);
+    color: var(--green);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 36px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 28px 80px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    animation: restart-pulse 2s ease-out infinite;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.restart-btn:hover {
+    background: var(--green);
+    color: var(--bg);
+    animation: none;
+}
+
+/* === PROGRESS BAR ========================================== */
+.progress-bar {
+    position: fixed;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: var(--green);
+    transition: width 0.4s var(--ease-expo);
+    z-index: 2000;
+    opacity: 0.55;
+}
+
+</style>
+</head>
+<body>
+
+<div class="deck-viewport">
+  <main class="deck-stage" id="deckStage">
+
+    <canvas id="matrixCanvas" class="matrix-canvas" aria-hidden="true"></canvas>
+
+    <!-- ===========================================================
+    SLIDE 01  TITLE
+    ============================================================ -->
+    <section class="slide active" id="slide-1" aria-label="Title: Let's Try Public Speaking">
+      <div class="left-accent"></div>
+      <div class="slide-inner layout-title">
+        <div class="content">
+          <div style="height:36px"></div>
+          <div class="title-bracket-deco reveal delay-2">&lt;<span style="font-size:0.68em;vertical-align:middle">🎤</span>&gt;</div>
+          <h1 class="slide-hero-title reveal delay-3">
+            Let's Try<br>
+            Public <span class="accent">Speaking</span>
+          </h1>
+          <div class="title-meta reveal" style="font-size:50px">
+            <span>Interactive Session</span>
+          </div>
+          <div class="title-meta reveal delay-5" style="margin-top:100px">
+            <span>Public Speaking for Developers</span>
+            <span class="sep">*</span>
+            <span>2026.06.15</span>
+          </div>
+        </div>
+      </div>
+      <div class="deco-circles" aria-hidden="true">
+        <div class="deco-circle c1"></div>
+        <div class="deco-circle c2"></div>
+        <div class="deco-circle c3"></div>
+      </div>
+      <div class="slide-number">01</div>
+    </section>
+
+    <!-- ===========================================================
+    SLIDE 02  HOW IT WORKS — 5-step process
+    ============================================================ -->
+    <section class="slide" id="slide-2" aria-label="How It Works">
+      <div class="left-accent"></div>
+      <div class="slide-inner layout-split">
+        <div class="split-content">
+          <div class="section-tag reveal delay-1">Interactive Session</div>
+          <h2 class="split-title reveal delay-2">How It<br><span class="accent">Works</span></h2>
+          <p class="split-body reveal delay-3">Follow these five steps with your group.</p>
+        </div>
+        <div class="split-panel">
+          <div class="steps-list">
+            <div class="step-item reveal delay-2">
+              <span class="step-num">1</span>
+              <span class="step-text">Split into small groups of <strong style="color:var(--chalk)">5–10</strong></span>
+            </div>
+            <div class="step-item reveal delay-3">
+              <span class="step-num">2</span>
+              <span class="step-text">Pick your <strong style="color:var(--chalk)">favourite topic</strong> from the next slide</span>
+            </div>
+            <div class="step-item reveal delay-4">
+              <span class="step-num">3</span>
+              <span class="step-text">
+                Spend <strong style="color:var(--chalk)">5 minutes</strong> preparing a 1 min talk
+                <span class="step-note">Get advice from on-site mentors</span>
+              </span>
+            </div>
+            <div class="step-item reveal delay-5">
+              <span class="step-num">4</span>
+              <span class="step-text">
+                Give your talk to your group
+                <span class="step-note">Immediate feedback · timed by organizers</span>
+              </span>
+            </div>
+            <div class="step-item reveal delay-6">
+              <span class="step-num">5</span>
+              <span class="step-text"><strong style="color:var(--chalk)">Grab the stage !</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-number">02</div>
+    </section>
+
+    <!-- ===========================================================
+    SLIDE 03  TOPICS — 7 options in two-column grid
+    ============================================================ -->
+    <section class="slide" id="slide-3" aria-label="Choose Your Topic">
+      <div class="left-accent"></div>
+      <div class="slide-inner layout-topics">
+        <div class="topics-header reveal delay-1">
+          <div class="section-tag">Pick one · your favourite</div>
+          <h2 class="topics-title">Choose Your <span class="accent">Topic</span></h2>
+        </div>
+        <div class="topics-grid">
+          <!-- Col 1: topics 1–4 / Col 2: topics 5–7 (grid fills left-to-right per row) -->
+          <div class="topic-item reveal delay-2">
+            <span class="topic-num">1</span>
+            <span class="topic-text">My first production incident / big mistake at work</span>
+          </div>
+          <div class="topic-item reveal delay-2">
+            <span class="topic-num">5</span>
+            <span class="topic-text">My recent obsession</span>
+          </div>
+
+          <div class="topic-item reveal delay-3">
+            <span class="topic-num">2</span>
+            <span class="topic-text">The career advice I wish I had ignored</span>
+          </div>
+          <div class="topic-item reveal delay-3">
+            <span class="topic-num">6</span>
+            <span class="topic-text">My skill that would surprise my coworkers</span>
+          </div>
+
+          <div class="topic-item reveal delay-4">
+            <span class="topic-num">3</span>
+            <span class="topic-text">What I would fix in the tech industry</span>
+          </div>
+          <div class="topic-item reveal delay-4">
+            <span class="topic-num">7</span>
+            <span class="topic-text">Something from my childhood that still influences how I work</span>
+          </div>
+
+          <div class="topic-item reveal delay-5">
+            <span class="topic-num">4</span>
+            <span class="topic-text">A topic I can give a 1 hour lecture on (and why)</span>
+          </div>
+        </div>
+      </div>
+      <div class="slide-number">03</div>
+    </section>
+
+    <!-- ===========================================================
+    SLIDE 04  PREP TIME
+    ============================================================ -->
+    <section class="slide" id="slide-4" aria-label="Prep Time">
+      <div class="left-accent"></div>
+      <div class="slide-inner layout-impact">
+        <h2 class="impact-headline reveal delay-1">
+          Prep<br><span class="accent">Time !</span>
+        </h2>
+        <p class="impact-sub reveal delay-3">
+          <strong>5 minutes</strong> · get help from on-site mentors
+        </p>
+      </div>
+      <div class="slide-number">04</div>
+    </section>
+
+    <!-- ===========================================================
+    SLIDE 05  TALK TIME
+    ============================================================ -->
+    <section class="slide" id="slide-5" aria-label="Talk Time">
+      <div class="left-accent"></div>
+      <div class="slide-inner layout-impact">
+        <h2 class="impact-headline reveal delay-1">
+          Talk<br><span class="accent">Time !</span>
+        </h2>
+        <p class="impact-sub reveal delay-3">
+          <strong>1 minute</strong> · timed by organizers
+        </p>
+      </div>
+      <div class="slide-number">05</div>
+    </section>
+
+    <!-- ===========================================================
+    SLIDE 06  FEEDBACK TIME
+    ============================================================ -->
+    <section class="slide" id="slide-6" aria-label="Feedback Time">
+      <div class="left-accent"></div>
+      <div class="slide-inner layout-impact">
+        <h2 class="impact-headline reveal delay-1">
+          Feedback<br><span class="accent">Time !</span>
+        </h2>
+        <p class="impact-sub reveal delay-3">
+          <strong>1 minute max</strong>
+        </p>
+      </div>
+      <div class="slide-number">06</div>
+    </section>
+
+    <!-- ===========================================================
+    SLIDE 07  NOMINATION TIME
+    ============================================================ -->
+    <section class="slide" id="slide-7" aria-label="Nomination Time">
+      <div class="left-accent"></div>
+      <div class="slide-inner layout-arc">
+        <div class="arc-bg-number" aria-hidden="true">07</div>
+        <div class="arc-tag reveal delay-1">
+          <span class="arc-tag-label">Final Step</span>
+          <div class="arc-tag-line"></div>
+        </div>
+        <h2 class="arc-title reveal delay-2">Nomination<br><span class="accent">Time !</span></h2>
+        <p class="arc-body reveal delay-3">
+          Nominate one person from your group<br>
+          to present on the main stage.
+        </p>
+        <p class="arc-note reveal delay-4">( No, you can't vote for yourself )</p>
+      </div>
+      <div class="slide-number">07</div>
+    </section>
+
+    <!-- ===========================================================
+    SLIDE 08  NETWORKING & DRINKS — closing
+    ============================================================ -->
+    <section class="slide" id="slide-8" aria-label="Networking and Drinks">
+      <div class="left-accent"></div>
+      <div class="slide-inner layout-closing">
+        <h2 class="closing-title reveal delay-2">
+          🍕🍺 Networking<br>&amp; <span class="accent">Drinks</span>
+        </h2>
+        <button class="restart-btn reveal delay-6" onclick="deck.show(0)">↩ Restart</button>
+      </div>
+      <div class="deco-circles" aria-hidden="true">
+        <div class="deco-circle c1"></div>
+        <div class="deco-circle c2"></div>
+        <div class="deco-circle c3"></div>
+      </div>
+      <div class="slide-number">08</div>
+    </section>
+
+  </main>
+</div>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<script>
+/* === MATRIX RAIN — very low opacity, atmosphere only ======= */
+(function initMatrix() {
+    const canvas = document.getElementById('matrixCanvas');
+    canvas.width  = 1920;
+    canvas.height = 1080;
+    const ctx  = canvas.getContext('2d');
+    const fs   = 15;
+    const cols = Math.floor(1920 / fs);
+    const drops = Array.from({length: cols}, () => Math.floor(Math.random() * 72));
+    const chars = '01アウエカキクコ<>/{}[];:=>';
+
+    function draw() {
+        ctx.fillStyle = 'rgba(6,13,6,0.06)';
+        ctx.fillRect(0, 0, 1920, 1080);
+        ctx.fillStyle = '#4ade80';
+        ctx.font = `${fs}px monospace`;
+        for (let i = 0; i < drops.length; i++) {
+            ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fs, drops[i] * fs);
+            if (drops[i] * fs > 1080 && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+        }
+    }
+    setInterval(draw, 80);
+})();
+
+/* === SLIDE PRESENTATION CONTROLLER ========================= */
+class SlidePresentation {
+    constructor() {
+        this.slides  = Array.from(document.querySelectorAll('.slide'));
+        this.total   = this.slides.length;
+        this.current = 0;
+        this.stage   = document.getElementById('deckStage');
+        this.bar     = document.getElementById('progressBar');
+
+        this.setupScale();
+        this.setupKeyboard();
+        this.setupTouch();
+        this.setupWheel();
+        this.show(0);
+    }
+
+    setupScale() {
+        const scale = () => {
+            const f = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+            const x = (window.innerWidth  - 1920 * f) / 2;
+            const y = (window.innerHeight - 1080 * f) / 2;
+            this.stage.style.transform = `translate(${x}px,${y}px) scale(${f})`;
+        };
+        scale();
+        window.addEventListener('resize', scale);
+    }
+
+    setupKeyboard() {
+        document.addEventListener('keydown', e => {
+            if (e.target.getAttribute('contenteditable')) return;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ')
+                { e.preventDefault(); this.next(); }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp')
+                { e.preventDefault(); this.prev(); }
+            if (e.key === 'Home') this.show(0);
+            if (e.key === 'End')  this.show(this.total - 1);
+        });
+    }
+
+    setupTouch() {
+        let sx = 0, sy = 0;
+        document.addEventListener('touchstart', e => {
+            sx = e.touches[0].clientX;
+            sy = e.touches[0].clientY;
+        }, {passive: true});
+        document.addEventListener('touchend', e => {
+            const dx = e.changedTouches[0].clientX - sx;
+            const dy = e.changedTouches[0].clientY - sy;
+            if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50)
+                dx < 0 ? this.next() : this.prev();
+        });
+    }
+
+    setupWheel() {
+        let last = 0;
+        document.addEventListener('wheel', e => {
+            const now = Date.now();
+            if (now - last < 600) return;
+            last = now;
+            e.deltaY > 0 ? this.next() : this.prev();
+        }, {passive: true});
+    }
+
+    next() { this.show(this.current + 1); }
+    prev() { this.show(this.current - 1); }
+
+    show(idx) {
+        this.current = Math.max(0, Math.min(idx, this.total - 1));
+        this.slides.forEach((s, i) => {
+            const on = i === this.current;
+            s.classList.toggle('active',  on);
+            s.classList.toggle('visible', on);
+        });
+        this.bar.style.width = ((this.current + 1) / this.total * 100) + '%';
+    }
+}
+
+const deck = new SlidePresentation();
+</script>
+</body>
+</html>
