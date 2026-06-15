@@ -2,6 +2,7 @@
 
 Slides for the event [Public Speaking for Developers](https://luma.com/m4if17ik).
 
+Web version: https://kaustubhhiware.github.io/public-speaking-for-developers/
 
 Slides generated using [frontend-slides](https://github.com/zarazhangrui/frontend-slides).
 
